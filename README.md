@@ -18,7 +18,7 @@ echo "rsa-....(public key content)" >> ~/.ssh/authorized_keys
 
 
 
-- Setup script
+## Initial configurations and network security
 
 ```shell
 # update package lists
@@ -43,6 +43,37 @@ sudo service sshd restart # restart ssh service
 
 # one last step: on the Lightsail web panel, under networking, add a custom port to be opened at 2200
 ```
+
+- Setup firewall to enable ports
+```shell
+sudo ufw allow in 2200
+sudo ufw allow in 80
+sudo ufw allow in 123
+sudo ufw reload # take effect after reloading
+```
+
+## Setup `grader` user
+
+```shell
+sudo adduser grader
+# sudo passwd -e grader # (opt) expire grader password immediately, enforce password change - Udacity
+su - grader # login to grader
+
+# add sudo permission to grader
+# either edit the /etc/sudoers
+sudo visudo # and copy the line
+    root ALL=(ALL:ALL) ALL
+    to grader ALL=(ALL:ALL) ALL
+
+# or (recommended by Ubuntu) create a new file in the /etc/sudoers.d/ such as /etc/sudoers.d/grader-user with the following line
+    grader ALL=(ALL) NOPASSWD:ALL
+
+# generate ssh key following instructions
+ssh-keygen
+```
+
+## Deploy app
+
 
 ## Resources
 - Uncomplicated FireWall [ufw](https://www.linux.com/learn/introduction-uncomplicated-firewall-ufw)
