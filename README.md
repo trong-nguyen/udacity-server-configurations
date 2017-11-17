@@ -74,6 +74,140 @@ ssh-keygen
 
 ## Deploy app
 
+- Set timezone to UTC
+```shell
+sudo timedatectl set-timezone UTC
+```
+
+- Install Apache
+```shell
+sudo apt-get install apache2 libapache2-mod-wsgi
+```
+- PostgreSQL
+```shell
+sudo apt-get install postgresql postgresql-contrib
+
+sudo dpkg-reconfigure locales # https://askubuntu.com/a/694172
+
+# switch to #postgres user (created during PostgreSQL install)
+sudo su - postgres
+# create PostgreSQL user "catalog" and database "catalog"
+postgres$createuser catalog
+postgres$createdb catalog
+postgres$psql
+psql#ALTER DATABASE catalog OWNER TO catalog; # hand over ownership of catalog-the database to catalog-the user.
+
+# create an actual catalog linux user, our app will run as this user
+sudo adduser catalog
+
+sudo apt-get install python-pip
+sudo apt-get install virtualenv
+
+# switch to catalog user
+su - catalog # enter password
+mkdir catalog-app
+cd catalog-app
+git clone https://github.com/trong-nguyen/udacity-catalog-site.git
+virtualenv init
+. init/bin/activate
+pip install udacity-catalog-site/requirements.txt
+
+python setup.py # create database and data
+```
+
+- Setup environment
+```shell
+sudo apt-get install libapache2-mod-wsgi python-dev
+sudo a2enmod wsgi
+```
+
+- Configure Apache2 and WSGI
+```shell
+
+# config content as in wsgi_config.txt file in repo (explained below)
+sudo nano /etc/apache2/sites-available/catalog.conf
+
+# add the site to serving list
+sudo a2ensite catalog
+sudo service apache2 reload
+```
+
+## Configure Mod_WSGI to serve our app
+
+- Put this in /etc/apache/sites-available/[APP_NAME].conf
+```
+# wsgi_config.txt content
+<VirtualHost *:80>
+    ServerName [SERVERNAME]
+    ServerAdmin [CONTACT_EMAIL]
+    WSGIDaemonProcess [DAEMON_PROCESS_NAME] user=[USERNAME] group=[GROUPNAME]
+    WSGIProcessGroup [DAEMON_PROCESS_NAME]
+    WSGIScriptAlias / [PATH_TO_THE_WSGI_FILE]
+    <Directory [PATH_TO_THE_APP_DIRECTORY_IN_www]>
+        Order allow,deny
+        Allow from all
+    </Directory>
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+    LogLevel warn
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>
+```
+
+- where SERVERNAME is the address (URL) of the site. It could be:
+    - localhost (reached from within)
+    - 127.0.0.1
+    - 53.24.19.12
+    - realwebsite.com
+    - somename.com
+    - api.somename.com
+
+- That will be the identifier that Apache bases on to direct the requests to correct process. For example:
+    - request `somename.com` routed to `52.1.42.22` through Apache will go to VirtualHost with SERVERNAME of `somename.com`
+    - request `api.somename.com` routed to `52.1.42.22` through Apache will go to VirtualHost with SERVERNAME of `api.somename.com`
+    - request `52.1.42.22` routed to `52.1.42.22` through Apache will go to VirtualHost with SERVERNAME of `52.1.42.22`
+
+- **Important!** DAEMON_PROCESS_NAME is used to identify the group of daemon processes to serve a particular SERVERNAME. It must be used to demand correct serving processes (and permissions). Example:
+```shell
+sudo adduser apprunner
+sudo -u postgres createuser apprunner # execute the command createuser as postgres
+# then the USERNAME and GROUPNAME in our configuration will be apprunner
+# DAEMON_PROCESS_NAME could be anything like apprunnerGroup or similar.
+```
+- USERNAME is the Linux username used to run the daemons (and possesses according permissions such as connect to Databases)
+- GROUPNAME is the Linux group name, usually the same as USERNAME if not otherwise specified for the USERNAME (in OS configurations).
+
+## Understanding database security with PostgreSQL authentication
+
+In config file `/etc/postgresql/9.1/main/pg_hba.conf`
+```shell
+local   all             postgres                                peer
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# "local" is for Unix domain socket connections only
+local   all             all                                     peer
+# IPv4 local connections:
+host    all             all             127.0.0.1/32            md5
+# IPv6 local connections:
+host    all             all             ::1/128                 md5
+# Allow replication connections from localhost, by a user with the
+# replication privilege.
+#local   replication     postgres                                peer
+#host    replication     postgres        127.0.0.1/32            md5
+#host    replication     postgres        ::1/128                 md5
+```
+Notice the `METHOD` section where can see options such as peer and md5.
+Which basically means peer only allow connection from Unix socket (loggedin user, for only Linux users with corresponding (the same) PostgreSQL username, i.e. if a Linix user account joe, that user can only connect to a database accessible to a PostgreSQL username joe. Note that Linux username # PostgresSQL username. In peer auth, PostgreSQL only allows connect from username with the same Linux username.
+
+### Peer authentication
+
+The peer authentication method works by obtaining the client's operating system user name from the kernel and using it as the allowed database user name (with optional user name mapping). This method is only supported on local connections.
+
+### Password authentication
+The password-based authentication methods are md5 and password. These methods operate similarly except for the way that the password is sent across the connection, namely MD5-hashed and clear-text respectively.
+
 
 ## Resources
 - Uncomplicated FireWall [ufw](https://www.linux.com/learn/introduction-uncomplicated-firewall-ufw)
+- Configure [Apache virtual hosts](https://serverfault.com/a/520201)
+- Configure [Apache, mod_wsgi and Python apps (Flask, Django)](https://www.digitalocean.com/community/tutorials/how-to-run-django-with-mod_wsgi-and-apache-with-a-virtualenv-python-environment-on-a-debian-vps)
