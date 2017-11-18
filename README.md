@@ -1,6 +1,54 @@
 # Linux Server Configurations
 
-## Create a Linux instance using AWS Lightsail
+## Server Details
+
+IP: 54.85.31.69
+
+URL: http://54.85.31.69
+
+ssh port: 2200
+
+## Software installed
+
+- Apache2
+- mod_wsgi
+- PostgreSQL
+- python-pip
+- virtualenv
+- [Catalog App](https://github.com/trong-nguyen/udacity-catalog-site.git) and its dependencies:
+```
+bleach==2.0.0
+certifi==2017.7.27.1
+chardet==3.0.4
+click==6.7
+Flask==0.12.2
+Flask-HTTPAuth==3.2.3
+Flask-SQLAlchemy==2.2
+html5lib==0.999999999
+httplib2==0.10.3
+idna==2.6
+itsdangerous==0.24
+Jinja2==2.9.6
+MarkupSafe==1.0
+oauth2client==4.1.2
+packaging==16.8
+passlib==1.7.1
+psycopg2==2.7.3.1
+pyasn1==0.3.4
+pyasn1-modules==0.1.4
+pyparsing==2.2.0
+redis==2.10.6
+requests==2.18.4
+rsa==3.4.2
+six==1.10.0
+SQLAlchemy==1.1.14
+urllib3==1.22
+webencodings==0.5.1
+```
+
+## Configuration Steps
+
+### Create a Linux instance using AWS Lightsail
 
 - Connect using your own shell. Download the pem key from [Lightsail](https://lightsail.aws.amazon.com/ls/webapp/account/keys)
 ```shell
@@ -18,7 +66,7 @@ echo "rsa-....(public key content)" >> ~/.ssh/authorized_keys
 
 
 
-## Initial configurations and network security
+### Initial configurations and network security
 
 ```shell
 # update package lists
@@ -52,7 +100,21 @@ sudo ufw allow in 123
 sudo ufw reload # take effect after reloading
 ```
 
-## Setup `grader` user
+- Disable remote login as root
+```shell
+sudo nano /etc/ssh/sshd_config
+# and change line to "PermitRootLogin no"
+```
+
+- Disable password-based authentication for ssh connections
+```shell
+sudo nano /etc/ssh/sshd_config
+# And change a line to `PasswordAuthentication no`
+# Then restart ssh service
+sudo service sshd restart
+```
+
+### Setup `grader` user
 
 ```shell
 sudo adduser grader
@@ -68,11 +130,17 @@ sudo visudo # and copy the line
 # or (recommended by Ubuntu) create a new file in the /etc/sudoers.d/ such as /etc/sudoers.d/grader-user with the following line
     grader ALL=(ALL) NOPASSWD:ALL
 
-# generate ssh key following instructions
+# generate ssh key and follow instructions
 ssh-keygen
+
+# create authorized_keys file
+touch ~/.ssh/authorized_keys
+
+# copy the public key to the trusted list, this will enable anyone with the right private key login as grader
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
 ```
 
-## Deploy app
+### Deploy app
 
 - Set timezone to UTC
 ```shell
@@ -132,7 +200,7 @@ sudo a2ensite catalog
 sudo service apache2 reload
 ```
 
-## Configure Mod_WSGI to serve our app
+### Configure Mod_WSGI to serve our app
 
 - Put this in /etc/apache/sites-available/[APP_NAME].conf
 ```
@@ -140,7 +208,7 @@ sudo service apache2 reload
 <VirtualHost *:80>
     ServerName [SERVERNAME]
     ServerAdmin [CONTACT_EMAIL]
-    WSGIDaemonProcess [DAEMON_PROCESS_NAME] user=[USERNAME] group=[GROUPNAME]
+    WSGIDaemonProcess [DAEMON_PROCESS_NAME] user=[USERNAME] group=[GROUPNAME] home=[HOME_DIRECTORY]
     WSGIProcessGroup [DAEMON_PROCESS_NAME]
     WSGIScriptAlias / [PATH_TO_THE_WSGI_FILE]
     <Directory [PATH_TO_THE_APP_DIRECTORY_IN_www]>
@@ -175,10 +243,11 @@ sudo -u postgres createuser apprunner # execute the command createuser as postgr
 ```
 - USERNAME is the Linux username used to run the daemons (and possesses according permissions such as connect to Databases)
 - GROUPNAME is the Linux group name, usually the same as USERNAME if not otherwise specified for the USERNAME (in OS configurations).
+- HOME_DIRECTORY will be the current working directory of spawn daemons, important for I/O activities: reading secrets, etc.
 
-## Understanding database security with PostgreSQL authentication
+### Understanding database security with PostgreSQL authentication
 
-In config file `/etc/postgresql/9.1/main/pg_hba.conf`
+In config file `/etc/postgresql/[VERSION]/main/pg_hba.conf`
 ```shell
 local   all             postgres                                peer
 
@@ -199,15 +268,18 @@ host    all             all             ::1/128                 md5
 Notice the `METHOD` section where can see options such as peer and md5.
 Which basically means peer only allow connection from Unix socket (loggedin user, for only Linux users with corresponding (the same) PostgreSQL username, i.e. if a Linix user account joe, that user can only connect to a database accessible to a PostgreSQL username joe. Note that Linux username # PostgresSQL username. In peer auth, PostgreSQL only allows connect from username with the same Linux username.
 
-### Peer authentication
+> By default, PostgreSQL handles authentication by associating Linux user accounts with PostgreSQL accounts. This is called "peer" authentication.
+
+#### Peer authentication
 
 The peer authentication method works by obtaining the client's operating system user name from the kernel and using it as the allowed database user name (with optional user name mapping). This method is only supported on local connections.
 
-### Password authentication
+#### Password authentication
 The password-based authentication methods are md5 and password. These methods operate similarly except for the way that the password is sent across the connection, namely MD5-hashed and clear-text respectively.
 
 
-## Resources
+## Attributed Resources
 - Uncomplicated FireWall [ufw](https://www.linux.com/learn/introduction-uncomplicated-firewall-ufw)
 - Configure [Apache virtual hosts](https://serverfault.com/a/520201)
 - Configure [Apache, mod_wsgi and Python apps (Flask, Django)](https://www.digitalocean.com/community/tutorials/how-to-run-django-with-mod_wsgi-and-apache-with-a-virtualenv-python-environment-on-a-debian-vps)
+- PostgreSQL security by [DigitalOcean](https://www.digitalocean.com/community/tutorials/how-to-secure-postgresql-on-an-ubuntu-vps)
