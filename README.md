@@ -8,6 +8,10 @@ URL: http://54.85.31.69
 
 ssh port: 2200
 
+Connect to the ssh server:
+
+`ssh -i /path/to/submited/chmod/400/private/key grader@54.85.31.69 -p 2200`
+
 ## Software installed
 
 - Apache2
