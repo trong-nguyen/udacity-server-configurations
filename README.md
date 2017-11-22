@@ -1,7 +1,7 @@
 # Linux Server Configurations
 This is a project to demo my DevOps skills which I rely on to deliver developed web apps to the public. Though some specific tools are mentioned in the project, the underlying understanding could be applied to other tools (NginX, UWSGI, MySQL instead of Apache2, Mod_WSGI, PostgreSQL).
 
-A detailed walk-through of server configuration for hosting of multiple web applications. The utmost important aspect is security for which user permissions, firewall and admin connection (SSH) are configured. A separate execution environment (user, database, environment variables) is dedicated to each application. Web server (Apache) configuration is also covered, particularly for running Python web apps. The stack for this demo project involves Amazon Lightsail, Linux, SSH services, Apache2 web server, Mod_WSGI, PostgreSQL, Linux Uncomplicated Firewall and Python VirtualEnv.
+A detailed walk-through of server configuration for hosting of multiple web applications. The utmost important aspect is security for which user permissions, firewall and admin connection (SSH) are configured. A separate execution environment (user, database, dependencies) is dedicated to each application. Web server (Apache) configuration and database management are also covered, particularly for running Python web apps. The stack for this demo project involves Amazon Lightsail, Linux, SSH services, Apache2 web server, Mod_WSGI, PostgreSQL, Linux Uncomplicated Firewall and Python VirtualEnv.
 
 ## Server Details
 
