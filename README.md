@@ -1,4 +1,7 @@
 # Linux Server Configurations
+This is a project to demo my DevOps skills which I rely on to deliver developed web apps to the public. Though some specific tools are mentioned in the project, the underlying understanding could be applied to other tools (NginX, UWSGI, MySQL instead of Apache2, Mod_WSGI, PostgreSQL).
+
+A detailed walk-through of server configuration for hosting of multiple web applications. The utmost important aspect is security for which user permissions, firewall and admin connection (SSH) are configured. A separate execution environment (user, database, environment variables) is dedicated to each application. Web server (Apache) configuration is also covered, particularly for running Python web apps. The stack for this demo project involves Amazon Lightsail, Linux, SSH services, Apache2 web server, Mod_WSGI, PostgreSQL, Linux Uncomplicated Firewall and Python VirtualEnv.
 
 ## Server Details
 
@@ -269,8 +272,7 @@ host    all             all             ::1/128                 md5
 #host    replication     postgres        127.0.0.1/32            md5
 #host    replication     postgres        ::1/128                 md5
 ```
-Notice the `METHOD` section where can see options such as peer and md5.
-Which basically means peer only allow connection from Unix socket (loggedin user, for only Linux users with corresponding (the same) PostgreSQL username, i.e. if a Linix user account joe, that user can only connect to a database accessible to a PostgreSQL username joe. Note that Linux username # PostgresSQL username. In peer auth, PostgreSQL only allows connect from username with the same Linux username.
+Notice the `METHOD` section where we can see options such as peer and md5. Where peer only allows connection from Unix socket (loggedin user, for only Linux users with corresponding (the same) PostgreSQL username, i.e. if a Linix user account joe, that user can only connect to a database accessible to a PostgreSQL username joe. Note that Linux username # PostgresSQL username. In peer auth, PostgreSQL only allows connect from username with the same Linux username.
 
 > By default, PostgreSQL handles authentication by associating Linux user accounts with PostgreSQL accounts. This is called "peer" authentication.
 
